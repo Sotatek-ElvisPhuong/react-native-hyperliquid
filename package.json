@@ -1,9 +1,8 @@
 {
-  "name": "dm-hyperliquid",
-  "version": "0.1.0",
-  "description": "HyperLquid",
+  "name": "react-native-hyperliquid",
+  "version": "1.1.0",
+  "description": "React Native HyperLquid",
   "source": "./src/index.ts",
-  "private": true,
   "main": "./src/index.ts",
   "module": "./lib/module/index.js",
   "exports": {
@@ -34,7 +33,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace dm-hyperliquid-example",
+    "example": "yarn workspace react-native-hyperliquid-example",
     "test": "jest",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
@@ -49,14 +48,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/daomydong1995/dm-hyperliquid.git"
+    "url": "git+https://github.com/Sotatek-ElvisPhuong/react-native-hyperliquid.git"
   },
-  "author": "Đào Mỹ Đông <daomydong1995@gmail.com> (https://github.com/daomydong1995)",
+  "author": "Sotatek-ElvisPhuong <elvis.phuong@mimo.capital> (https://github.com/Sotatek-ElvisPhuong)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/daomydong1995/dm-hyperliquid/issues"
+    "url": "https://github.com/Sotatek-ElvisPhuong/react-native-hyperliquid/issues"
   },
-  "homepage": "https://github.com/daomydong1995/dm-hyperliquid#readme",
+  "homepage": "https://github.com/Sotatek-ElvisPhuong/react-native-hyperliquid#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

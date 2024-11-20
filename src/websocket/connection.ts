@@ -28,7 +28,7 @@ export class WebSocketClient extends EventEmitter {
                 resolve();
             };
 
-            this.ws.onmessage = (data: WebSocketMessageEvent) => {
+            this.ws.onmessage = (data: any) => {
                 try {
                     const message = JSON.parse(data.data.toString());
                     this.emit("message", message);
@@ -37,7 +37,7 @@ export class WebSocketClient extends EventEmitter {
                 }
             };
 
-            this.ws.onerror = (error: Event) => {
+            this.ws.onerror = (error) => {
                 console.error("WebSocket error:", error);
                 reject(error);
             };

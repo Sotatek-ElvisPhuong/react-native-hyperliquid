@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "dm-hyperliquid": ["./src/index"]
+      "react-native-hyperliquid": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
