@@ -11,17 +11,18 @@ import {
 import type {
   OrderType,
   Signature,
-  OrderRequest,
   CancelOrderRequest,
   OrderWire,
   Grouping,
+  Order,
+  Builder,
 } from '../types';
 
 const phantomDomain = {
-  name: 'Exchange',
-  version: '1',
   chainId: 1337,
+  name: 'Exchange',
   verifyingContract: '0x0000000000000000000000000000000000000000',
+  version: '1',
 };
 
 const agentTypes = {
@@ -37,9 +38,9 @@ export function orderTypeToWire(orderType: OrderType): OrderType {
   } else if (orderType.trigger) {
     return {
       trigger: {
-        triggerPx: floatToWire(Number(orderType.trigger.triggerPx)),
         isMarket: orderType.trigger.isMarket,
         tpsl: orderType.trigger.tpsl,
+        triggerPx: floatToWire(Number(orderType.trigger.triggerPx)),
       },
     };
   }
@@ -59,7 +60,7 @@ function actionHash(
   const additionalBytesLength = vaultAddress === null ? 9 : 29;
   const data = new Uint8Array(msgPackBytes.length + additionalBytesLength);
   data.set(msgPackBytes);
-  const view = new DataView(data.buffer);
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   view.setBigUint64(msgPackBytes.length, BigInt(nonce), false);
   if (vaultAddress === null) {
     view.setUint8(msgPackBytes.length + 8, 0);
@@ -234,33 +235,19 @@ export function getTimestampMs(): number {
   return Date.now();
 }
 
-export function orderRequestToOrderWires(
-  order: OrderRequest,
-  asset: number
-): OrderWire[] {
-  const orderWires = order.order_types.map((orderType) => {
-    const is_buy = orderType.limit ? order.is_buy : !order.is_buy;
-    const reduce_only = orderType.limit ? order.reduce_only : true;
-    const limit_px = orderType.limit
-      ? floatToWire(order.limit_px)
-      : floatToWire(
-          Number(orderType.trigger?.triggerPx) -
-            Number(orderType.trigger?.triggerPx) * 0.05
-        );
-    const orderWire: OrderWire = {
-      a: asset,
-      b: is_buy,
-      p: limit_px,
-      s: floatToWire(order.sz),
-      r: reduce_only,
-      t: orderTypeToWire(orderType),
-    };
-    if (order.cloid !== undefined) {
-      orderWire.c = order.cloid;
-    }
-    return orderWire;
-  });
-  return orderWires;
+export function orderToWire(order: Order, asset: number): OrderWire {
+  const orderWire: OrderWire = {
+    a: asset,
+    b: order.is_buy,
+    p: floatToWire(order.limit_px),
+    s: floatToWire(order.sz),
+    r: order.reduce_only,
+    t: orderTypeToWire(order.order_type),
+  };
+  if (order.cloid !== undefined) {
+    orderWire.c = order.cloid;
+  }
+  return orderWire;
 }
 
 export interface CancelOrderResponse {
@@ -282,12 +269,14 @@ export function cancelOrderToAction(cancelRequest: CancelOrderRequest): any {
 
 export function orderWiresToOrderAction(
   orderWires: OrderWire[],
-  grouping: Grouping
+  grouping: Grouping,
+  builder?: Builder
 ): any {
   return {
     type: 'order',
     orders: orderWires,
     grouping: grouping,
+    ...(builder !== undefined ? { builder: builder } : {}),
   };
 }
 

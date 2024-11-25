@@ -10,6 +10,7 @@ import type {
   OrderType,
   UserOpenOrders,
   TriggerOrderTypeWire,
+  Order,
 } from '../types';
 import type { CancelOrderResponse } from '../utils/signing';
 import { SymbolConversion } from '../utils/symbolConversion';
@@ -105,8 +106,7 @@ export class CustomOperations {
     size: number,
     px?: number,
     triggers?: TriggerOrderTypeWire[],
-    slippage: number = this.DEFAULT_SLIPPAGE,
-    cloid?: string
+    slippage: number = this.DEFAULT_SLIPPAGE
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
     const slippagePrice = await this.getSlippagePrice(
@@ -116,25 +116,47 @@ export class CustomOperations {
       px
     );
 
-    const orderTypes: OrderType[] = [{ limit: { tif: 'Ioc' } } as OrderType];
+    const orderType: OrderType = {
+      limit: { tif: 'FrontendMarket' },
+    } as OrderType;
+
+    const orders: Order[] = [
+      {
+        coin: convertedSymbol,
+        is_buy: isBuy,
+        sz: size,
+        limit_px: slippagePrice,
+        order_type: orderType,
+        reduce_only: false,
+      },
+    ];
+
     if (triggers) {
-      triggers.forEach((trigger) => {
-        orderTypes.push({ trigger });
-      });
+      for (const trigger of triggers) {
+        const limitSlippage = await this.getSlippagePrice(
+          convertedSymbol,
+          !isBuy,
+          slippage,
+          Number(trigger.triggerPx)
+        );
+        orders.push({
+          coin: convertedSymbol,
+          is_buy: !isBuy,
+          sz: size,
+          limit_px: limitSlippage,
+          order_type: {
+            trigger: trigger,
+          },
+          reduce_only: true,
+        });
+      }
     }
 
     const orderRequest: OrderRequest = {
-      coin: convertedSymbol,
-      is_buy: isBuy,
-      sz: size,
-      limit_px: slippagePrice,
-      order_types: orderTypes,
-      reduce_only: false,
+      orders: orders,
+      grouping: !triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
     };
 
-    if (cloid) {
-      orderRequest.cloid = cloid;
-    }
     return this.exchange.placeOrder(orderRequest);
   }
 
@@ -143,29 +165,37 @@ export class CustomOperations {
     isBuy: boolean,
     size: number,
     triggers?: TriggerOrderTypeWire[],
-    cloid?: string
+    cloid?: string,
+    slippage: number = this.DEFAULT_SLIPPAGE
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
 
-    const orderTypes: OrderType[] = [];
+    const orders: Order[] = [];
     if (triggers) {
-      triggers.forEach((trigger) => {
-        orderTypes.push({ trigger });
-      });
+      for (const trigger of triggers) {
+        const limitSlippage = await this.getSlippagePrice(
+          convertedSymbol,
+          !isBuy,
+          slippage,
+          Number(trigger.triggerPx)
+        );
+        orders.push({
+          coin: convertedSymbol,
+          is_buy: !isBuy,
+          sz: size,
+          limit_px: limitSlippage,
+          order_type: {
+            trigger: trigger,
+          },
+          reduce_only: true,
+        });
+      }
     }
 
     const orderRequest: OrderRequest = {
-      coin: convertedSymbol,
-      is_buy: isBuy,
-      sz: size,
-      limit_px: 0,
-      order_types: orderTypes,
-      reduce_only: true,
+      orders: orders,
+      grouping: 'positionTpsl',
     };
-
-    if (cloid) {
-      orderRequest.cloid = cloid;
-    }
 
     return this.exchange.placeOrdersTpSl(orderRequest);
   }
@@ -204,7 +234,7 @@ export class CustomOperations {
         is_buy: isBuy,
         sz: closeSize,
         limit_px: slippagePrice,
-        order_types: [{ limit: { tif: 'Ioc' } } as OrderType],
+        order_type: { limit: { tif: 'Ioc' } } as OrderType,
         reduce_only: true,
       };
 
@@ -252,26 +282,47 @@ export class CustomOperations {
     size: number,
     px: number,
     triggers?: TriggerOrderTypeWire[],
-    cloid?: string
+    slippage: number = this.DEFAULT_SLIPPAGE
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
-    const orderTypes: OrderType[] = [{ limit: { tif: 'Gtc' } } as OrderType];
+    const orderType: OrderType = { limit: { tif: 'Gtc' } } as OrderType;
+    const orders: Order[] = [
+      {
+        coin: convertedSymbol,
+        is_buy: isBuy,
+        sz: size,
+        limit_px: px,
+        order_type: orderType,
+        reduce_only: false,
+      },
+    ];
+
     if (triggers) {
-      triggers.forEach((trigger) => {
-        orderTypes.push({ trigger });
-      });
+      for (const trigger of triggers) {
+        const limitSlippage = await this.getSlippagePrice(
+          convertedSymbol,
+          !isBuy,
+          slippage,
+          Number(trigger.triggerPx)
+        );
+        orders.push({
+          coin: convertedSymbol,
+          is_buy: !isBuy,
+          sz: size,
+          limit_px: limitSlippage,
+          order_type: {
+            trigger: trigger,
+          },
+          reduce_only: true,
+        });
+      }
     }
+
     const orderRequest: OrderRequest = {
-      coin: convertedSymbol,
-      is_buy: isBuy,
-      sz: size,
-      limit_px: px,
-      order_types: orderTypes,
-      reduce_only: false,
+      orders: orders,
+      grouping: !triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
     };
-    if (cloid) {
-      orderRequest.cloid = cloid;
-    }
+
     return this.exchange.placeOrder(orderRequest);
   }
 }

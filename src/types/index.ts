@@ -1,4 +1,4 @@
-export type Tif = 'Alo' | 'Ioc' | 'Gtc';
+export type Tif = 'Alo' | 'Ioc' | 'Gtc' | 'FrontendMarket';
 export type Tpsl = 'tp' | 'sl';
 export type LimitOrderType = {
   tif: Tif;
@@ -332,15 +332,32 @@ export interface UserOpenOrder {
   timestamp: number;
 }
 export type UserOpenOrders = UserOpenOrder[];
-export interface OrderRequest {
+export interface Order extends BaseOrder {
+  orders?: undefined;
   coin: string;
   is_buy: boolean;
   sz: number;
   limit_px: number;
-  order_types: OrderType[];
+  order_type: OrderType;
   reduce_only: boolean;
-  cloid?: Cloid;
+  cloid?: any;
+}
+
+export type OrderRequest = Order | MultiOrder;
+
+interface BaseOrder {
   vaultAddress?: string;
+  grouping?: Grouping;
+  builder?: Builder;
+}
+
+interface MultiOrder extends BaseOrder {
+  orders: Order[];
+}
+
+export interface Builder {
+  address: string;
+  fee: number;
 }
 export interface OrderWire {
   a: number;
@@ -461,11 +478,11 @@ export interface WsUserHistoricalOrders {
   orderHistory: OrderHistory[];
 }
 export interface OrderHistory {
-  order: Order;
+  order: OrderItem;
   status: string;
   statusTimestamp: number;
 }
-export interface Order {
+export interface OrderItem {
   coin: string;
   side: string;
   limitPx: string;
@@ -481,7 +498,7 @@ export interface Order {
   orderType: string;
   origSz: string;
   tif?: string;
-  cloid: any;
+  cloid: Cloid;
 }
 export interface Children {
   coin: string;
@@ -499,7 +516,7 @@ export interface Children {
   orderType: string;
   origSz: string;
   tif: any;
-  cloid: any;
+  cloid: Cloid;
 }
 export interface WsUserNonFundingLedgerUpdate {
   time: number;

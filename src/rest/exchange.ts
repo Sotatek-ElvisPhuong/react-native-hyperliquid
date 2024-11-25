@@ -4,16 +4,16 @@ import { HttpApi } from '../utils/helpers';
 import { InfoAPI } from './info';
 import {
   signL1Action,
-  orderRequestToOrderWires,
   orderWiresToOrderAction,
   type CancelOrderResponse,
   signUserSignedAction,
   signUsdTransferAction,
   signWithdrawFromBridgeAction,
+  orderToWire,
 } from '../utils/signing';
 import * as CONSTANTS from '../types/constants';
 
-import type { CancelOrderRequest, OrderRequest } from '../types/index';
+import type { CancelOrderRequest, Order, OrderRequest } from '../types/index';
 
 import { ExchangeType, ENDPOINTS } from '../types/constants';
 import { SymbolConversion } from '../utils/symbolConversion';
@@ -50,23 +50,45 @@ export class ExchangeAPI {
 
   // Create a normal order
   async placeOrder(orderRequest: OrderRequest): Promise<any> {
-    try {
-      const assetIndex = await this.getAssetIndex(orderRequest.coin);
+    const {
+      orders,
+      vaultAddress = null,
+      grouping = 'na',
+      builder,
+    } = orderRequest;
+    const ordersArray = orders ?? [orderRequest as Order];
 
-      const orderWires = orderRequestToOrderWires(orderRequest, assetIndex);
-      const grouping =
-        orderRequest.order_types.length > 1 ? 'normalTpsl' : 'na';
-      const action = orderWiresToOrderAction(orderWires, grouping);
+    try {
+      const assetIndexCache = new Map<string, number>();
+
+      const orderWires = await Promise.all(
+        ordersArray.map(async (o: Order) => {
+          let assetIndex = assetIndexCache.get(o.coin);
+          if (assetIndex === undefined) {
+            assetIndex = await this.getAssetIndex(o.coin);
+            assetIndexCache.set(o.coin, assetIndex);
+          }
+          return orderToWire(o, assetIndex);
+        })
+      );
+
+      const actions = orderWiresToOrderAction(orderWires, grouping, builder);
       const nonce = Date.now();
       const signature = await signL1Action(
         this.wallet,
-        action,
-        orderRequest.vaultAddress || null,
+        actions,
+        vaultAddress,
         nonce,
         this.IS_MAINNET
       );
 
-      const payload = { action, nonce, signature };
+      const payload = {
+        action: actions,
+        isFrontend: true,
+        nonce,
+        signature,
+        vaultAddress,
+      };
 
       const res = await this.httpApi.makeRequest(payload, 1);
       return res;
@@ -77,20 +99,34 @@ export class ExchangeAPI {
 
   // Create a TP/SL order
   async placeOrdersTpSl(orderRequest: OrderRequest): Promise<any> {
+    const { orders, vaultAddress = null, builder } = orderRequest;
+    const ordersArray = orders ?? [orderRequest as Order];
+    const grouping = 'positionTpsl';
+
     try {
-      const assetIndex = await this.getAssetIndex(orderRequest.coin);
-      const grouping = 'positionTpsl';
-      const orderWires = orderRequestToOrderWires(orderRequest, assetIndex);
-      const action = orderWiresToOrderAction(orderWires, grouping);
+      const assetIndexCache = new Map<string, number>();
+      const orderWires = await Promise.all(
+        ordersArray.map(async (o: Order) => {
+          let assetIndex = await this.getAssetIndex(o.coin);
+          if (assetIndex === undefined) {
+            assetIndex = await this.getAssetIndex(o.coin);
+            assetIndexCache.set(o.coin, assetIndex);
+          }
+          return orderToWire(o, assetIndex);
+        })
+      );
+
+      const actions = orderWiresToOrderAction(orderWires, grouping, builder);
       const nonce = Date.now();
       const signature = await signL1Action(
         this.wallet,
-        action,
+        actions,
         orderRequest.vaultAddress || null,
         nonce,
         this.IS_MAINNET
       );
-      const payload = { action, nonce, signature };
+
+      const payload = { action: actions, nonce, signature, vaultAddress };
 
       const res = await this.httpApi.makeRequest(payload, 1);
       return res;
@@ -162,11 +198,11 @@ export class ExchangeAPI {
   }
 
   //Modify a single order
-  async modifyOrder(oid: number, orderRequest: OrderRequest): Promise<any> {
+  async modifyOrder(oid: number, orderRequest: Order): Promise<any> {
     try {
       const assetIndex = await this.getAssetIndex(orderRequest.coin);
 
-      const orderWire = orderRequestToOrderWires(orderRequest, assetIndex)[0];
+      const orderWire = orderToWire(orderRequest, assetIndex);
       const action = {
         type: ExchangeType.MODIFY,
         oid,
@@ -190,7 +226,7 @@ export class ExchangeAPI {
 
   //Modify multiple orders at once
   async batchModifyOrders(
-    modifies: Array<{ oid: number; order: OrderRequest }>
+    modifies: Array<{ oid: number; order: Order }>
   ): Promise<any> {
     try {
       // First, get all asset indices in parallel
@@ -201,12 +237,10 @@ export class ExchangeAPI {
       const action = {
         type: ExchangeType.BATCH_MODIFY,
         modifies: modifies.map((m, index) => {
+          if (!assetIndices[index]) throw Error('non-existent assets');
           return {
             oid: m.oid,
-            order: orderRequestToOrderWires(
-              m.order,
-              assetIndices[index] as number
-            )[0],
+            order: orderToWire(m.order, assetIndices[index]),
           };
         }),
       };
