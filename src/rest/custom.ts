@@ -165,7 +165,6 @@ export class CustomOperations {
     isBuy: boolean,
     size: number,
     triggers?: TriggerOrderTypeWire[],
-    cloid?: string,
     slippage: number = this.DEFAULT_SLIPPAGE
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
