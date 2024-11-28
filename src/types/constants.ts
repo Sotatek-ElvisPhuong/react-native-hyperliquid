@@ -5,7 +5,7 @@ export const BASE_URLS = {
 
 export const WSS_URLS = {
   PRODUCTION: 'wss://api.hyperliquid.xyz/ws',
-  TESTNET: 'wss://api.hyperliquid-testnet.xyz/ws',
+  TESTNET: 'wss://api-ui.hyperliquid-testnet.xyz/ws',
 };
 
 export const ENDPOINTS = {

@@ -142,7 +142,7 @@ export class CustomOperations {
         orders.push({
           coin: convertedSymbol,
           is_buy: !isBuy,
-          sz: size,
+          sz: 0,
           limit_px: limitSlippage,
           order_type: {
             trigger: trigger,
@@ -154,7 +154,7 @@ export class CustomOperations {
 
     const orderRequest: OrderRequest = {
       orders: orders,
-      grouping: !triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
+      grouping: triggers && triggers.length > 0 ? 'normalTpsl' : 'na',
     };
 
     return this.exchange.placeOrder(orderRequest);
@@ -307,7 +307,7 @@ export class CustomOperations {
         orders.push({
           coin: convertedSymbol,
           is_buy: !isBuy,
-          sz: size,
+          sz: 0,
           limit_px: limitSlippage,
           order_type: {
             trigger: trigger,
@@ -319,7 +319,7 @@ export class CustomOperations {
 
     const orderRequest: OrderRequest = {
       orders: orders,
-      grouping: !triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
+      grouping: triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
     };
 
     return this.exchange.placeOrder(orderRequest);
