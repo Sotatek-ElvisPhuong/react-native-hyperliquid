@@ -11,6 +11,7 @@ import type {
   UserOpenOrders,
   TriggerOrderTypeWire,
   Order,
+  Builder,
 } from '../types';
 import type { CancelOrderResponse } from '../utils/signing';
 import { SymbolConversion } from '../utils/symbolConversion';
@@ -146,7 +147,8 @@ export class CustomOperations {
     size: number,
     px?: number,
     triggers?: TriggerOrderTypeWire[],
-    slippage: number = this.DEFAULT_SLIPPAGE
+    slippage: number = this.DEFAULT_SLIPPAGE,
+    builder?: Builder
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
     const slippagePrice = await this.getSlippagePrice(
@@ -193,6 +195,7 @@ export class CustomOperations {
     }
 
     const orderRequest: OrderRequest = {
+      builder: builder,
       orders: orders,
       grouping: triggers && triggers.length > 0 ? 'normalTpsl' : 'na',
     };
@@ -215,7 +218,8 @@ export class CustomOperations {
     isBuy: boolean,
     size: number,
     triggers?: TriggerOrderTypeWire[],
-    slippage: number = this.DEFAULT_SLIPPAGE
+    slippage: number = this.DEFAULT_SLIPPAGE,
+    builder?: Builder
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
 
@@ -244,6 +248,7 @@ export class CustomOperations {
     const orderRequest: OrderRequest = {
       orders: orders,
       grouping: 'positionTpsl',
+      builder: builder
     };
 
     return this.exchange.placeOrdersTpSl(orderRequest);
@@ -264,7 +269,8 @@ export class CustomOperations {
     size?: number,
     px?: number,
     slippage: number = this.DEFAULT_SLIPPAGE,
-    cloid?: string
+    cloid?: string,
+    builder?: Builder
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
     const address = this.walletAddress || this.wallet.address;
@@ -295,6 +301,7 @@ export class CustomOperations {
         limit_px: slippagePrice,
         order_type: { limit: { tif: 'Ioc' } } as OrderType,
         reduce_only: true,
+        builder: builder,
       };
 
       if (cloid) {
@@ -358,7 +365,8 @@ export class CustomOperations {
     size: number,
     px: number,
     triggers?: TriggerOrderTypeWire[],
-    slippage: number = this.DEFAULT_SLIPPAGE
+    slippage: number = this.DEFAULT_SLIPPAGE,
+    builder?: Builder
   ): Promise<OrderResponse> {
     const convertedSymbol = await this.symbolConversion.convertSymbol(symbol);
     const orderType: OrderType = { limit: { tif: 'Gtc' } } as OrderType;
@@ -397,6 +405,7 @@ export class CustomOperations {
     const orderRequest: OrderRequest = {
       orders: orders,
       grouping: triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
+      builder: builder
     };
 
     return this.exchange.placeOrder(orderRequest);
