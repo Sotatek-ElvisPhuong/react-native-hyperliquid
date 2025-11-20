@@ -1,14 +1,16 @@
 import { RateLimiter } from '../utils/rateLimiter';
 import { InfoAPI } from './info';
 import { type CancelOrderResponse } from '../utils/signing';
-import type { CancelOrderRequest, Order, OrderRequest } from '../types/index';
+import type { ApproveBuilderFeeRequest, CancelOrderRequest, Order, OrderRequest } from '../types/index';
+import { Hyperliquid } from '../index';
 import { SymbolConversion } from '../utils/symbolConversion';
 export declare class ExchangeAPI {
     private wallet;
     private httpApi;
     private symbolConversion;
     private IS_MAINNET;
-    constructor(testnet: boolean, privateKey: string, _: InfoAPI, rateLimiter: RateLimiter, symbolConversion: SymbolConversion);
+    private parent;
+    constructor(testnet: boolean, privateKey: string, _: InfoAPI, rateLimiter: RateLimiter, symbolConversion: SymbolConversion, parent: Hyperliquid);
     private getAssetIndex;
     placeOrder(orderRequest: OrderRequest): Promise<any>;
     placeOrdersTpSl(orderRequest: OrderRequest): Promise<any>;
@@ -28,5 +30,6 @@ export declare class ExchangeAPI {
     scheduleCancel(time: number | null): Promise<any>;
     vaultTransfer(vaultAddress: string, isDeposit: boolean, usd: number): Promise<any>;
     setReferrer(code: string): Promise<any>;
+    approveBuilderFee(request: ApproveBuilderFeeRequest): Promise<any>;
 }
 //# sourceMappingURL=exchange.d.ts.map

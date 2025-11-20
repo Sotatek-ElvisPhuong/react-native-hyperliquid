@@ -45,10 +45,15 @@ export declare enum ExchangeType {
     SPOT_USER = "spotUser",
     VAULT_TRANSFER = "vaultTransfer",
     SET_REFERRER = "setReferrer",
-    USD_CLASS_TRANSFER = "usdClassTransfer"
+    USD_CLASS_TRANSFER = "usdClassTransfer",
+    APPROVE_BUILDER_FEE = "approveBuilderFee"
 }
 export declare const WEBSOCKET: {
     MAINNET_URL: string;
     TESTNET_URL: string;
+};
+export declare const CHAIN_IDS: {
+    ARBITRUM_MAINNET: string;
+    ARBITRUM_TESTNET: string;
 };
 //# sourceMappingURL=constants.d.ts.map

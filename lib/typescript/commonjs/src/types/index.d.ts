@@ -51,6 +51,10 @@ export interface AssetPosition {
     };
     type: string;
 }
+export interface ApproveBuilderFeeRequest {
+    maxFeeRate: string;
+    builder: string;
+}
 export interface ClearinghouseState {
     assetPositions: AssetPosition[];
     crossMaintenanceMarginUsed: string;

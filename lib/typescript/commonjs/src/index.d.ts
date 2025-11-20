@@ -17,6 +17,7 @@ export declare class Hyperliquid {
     private createAuthenticatedProxy;
     private initializeWithPrivateKey;
     isAuthenticated(): boolean;
+    ensureInitialized(): Promise<void>;
     connect(): Promise<void>;
     disconnect(): void;
 }
