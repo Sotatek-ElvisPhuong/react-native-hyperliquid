@@ -80,7 +80,8 @@ export class Hyperliquid {
         formattedPrivateKey,
         this.info,
         this.rateLimiter,
-        this.symbolConversion
+        this.symbolConversion,
+        this
       );
       this.custom = new CustomOperations(
         this.exchange,
@@ -100,6 +101,10 @@ export class Hyperliquid {
 
   public isAuthenticated(): boolean {
     return this.isValidPrivateKey;
+  }
+
+  public async ensureInitialized(): Promise<void> {
+    await this.connect();
   }
 
   async connect(): Promise<void> {

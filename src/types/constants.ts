@@ -50,9 +50,15 @@ export enum ExchangeType {
   VAULT_TRANSFER = 'vaultTransfer',
   SET_REFERRER = 'setReferrer',
   USD_CLASS_TRANSFER = 'usdClassTransfer',
+  APPROVE_BUILDER_FEE = 'approveBuilderFee',
 }
 
 export const WEBSOCKET = {
   MAINNET_URL: 'wss://api.hyperliquid.xyz/ws',
   TESTNET_URL: 'wss://api.hyperliquid-testnet.xyz/ws',
+};
+
+export const CHAIN_IDS = {
+  ARBITRUM_MAINNET: '0xa4b1', // 42161
+  ARBITRUM_TESTNET: '0x66eee', // 421614 - testnet//Arbitrum Sepolia
 };

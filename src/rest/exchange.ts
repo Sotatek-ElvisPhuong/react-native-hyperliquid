@@ -13,9 +13,16 @@ import {
 } from '../utils/signing';
 import * as CONSTANTS from '../types/constants';
 
-import type { CancelOrderRequest, Order, OrderRequest } from '../types/index';
+import type {
+  ApproveBuilderFeeRequest,
+  CancelOrderRequest,
+  Order,
+  OrderRequest,
+} from '../types/index';
 
-import { ExchangeType, ENDPOINTS } from '../types/constants';
+import { Hyperliquid } from '../index';
+
+import { ExchangeType, ENDPOINTS, CHAIN_IDS } from '../types/constants';
 import { SymbolConversion } from '../utils/symbolConversion';
 
 export class ExchangeAPI {
@@ -23,13 +30,15 @@ export class ExchangeAPI {
   private httpApi: HttpApi;
   private symbolConversion: SymbolConversion;
   private IS_MAINNET = true;
+  private parent: Hyperliquid;
 
   constructor(
     testnet: boolean,
     privateKey: string,
     _: InfoAPI,
     rateLimiter: RateLimiter,
-    symbolConversion: SymbolConversion
+    symbolConversion: SymbolConversion,
+    parent: Hyperliquid
   ) {
     const baseURL = testnet
       ? CONSTANTS.BASE_URLS.TESTNET
@@ -38,6 +47,7 @@ export class ExchangeAPI {
     this.httpApi = new HttpApi(baseURL, ENDPOINTS.EXCHANGE, rateLimiter);
     this.wallet = new ethers.Wallet(privateKey);
     this.symbolConversion = symbolConversion;
+    this.parent = parent;
   }
 
   private async getAssetIndex(symbol: string): Promise<number> {
@@ -510,6 +520,58 @@ export class ExchangeAPI {
       const payload = { action, nonce, signature };
       return this.httpApi.makeRequest(payload, 1);
     } catch (error) {
+      throw error;
+    }
+  }
+
+  async approveBuilderFee(request: ApproveBuilderFeeRequest): Promise<any> {
+    await this.parent.ensureInitialized();
+    try {
+      // Use timestamp for nonce to match successful request format
+      const nonce = Date.now();
+
+      // Ensure the builder address is lowercase
+      const builderAddress = request.builder.toLowerCase();
+
+      // Create the action object with exact same structure as successful request
+      const action = {
+        type: ExchangeType.APPROVE_BUILDER_FEE,
+        hyperliquidChain: this.IS_MAINNET ? 'Mainnet' : 'Testnet',
+        signatureChainId: this.IS_MAINNET
+          ? CHAIN_IDS.ARBITRUM_MAINNET
+          : CHAIN_IDS.ARBITRUM_TESTNET,
+        // Ensure maxFeeRate always includes the % symbol
+        maxFeeRate: request.maxFeeRate.endsWith('%')
+          ? request.maxFeeRate
+          : `${request.maxFeeRate}%`,
+        builder: builderAddress,
+        nonce: nonce,
+      };
+
+      // Sign the action with the correct types
+      const signature = await signUserSignedAction(
+        this.wallet,
+        action,
+        [
+          { name: 'hyperliquidChain', type: 'string' },
+          { name: 'maxFeeRate', type: 'string' },
+          { name: 'builder', type: 'address' },
+          { name: 'nonce', type: 'uint64' },
+        ],
+        'HyperliquidTransaction:ApproveBuilderFee',
+        this.IS_MAINNET
+      );
+
+      // Create the payload with the exact same structure as successful request
+      const payload = {
+        action,
+        nonce: action.nonce,
+        signature,
+      };
+
+      return this.httpApi.makeRequest(payload, 1);
+    } catch (error) {
+      console.error('Error in approveBuilderFee:', error);
       throw error;
     }
   }
