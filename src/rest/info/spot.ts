@@ -1,11 +1,11 @@
-import type {
-  SpotMeta,
-  SpotClearinghouseState,
-  SpotMetaAndAssetCtxs,
-} from '../../types';
 import { HttpApi } from '../../utils/helpers';
 import { InfoType } from '../../types/constants';
 import { SymbolConversion } from '../../utils/symbolConversion';
+import type {
+  SpotClearinghouseState,
+  SpotMeta,
+  SpotMetaAndAssetCtxs,
+} from '../../types';
 
 export class SpotInfoAPI {
   private httpApi: HttpApi;
@@ -21,12 +21,12 @@ export class SpotInfoAPI {
       type: InfoType.SPOT_META,
     });
     return rawResponse
-      ? response
-      : await this.symbolConversion.convertResponse(
+      ? (response as SpotMeta)
+      : ((await this.symbolConversion.convertResponse(
           response,
           ['name', 'coin', 'symbol'],
           'SPOT'
-        );
+        )) as SpotMeta);
   }
 
   async getSpotClearinghouseState(
@@ -38,12 +38,12 @@ export class SpotInfoAPI {
       user: user,
     });
     return rawResponse
-      ? response
-      : await this.symbolConversion.convertResponse(
+      ? (response as SpotClearinghouseState)
+      : ((await this.symbolConversion.convertResponse(
           response,
           ['name', 'coin', 'symbol'],
           'SPOT'
-        );
+        )) as SpotClearinghouseState);
   }
 
   async getSpotMetaAndAssetCtxs(
@@ -52,6 +52,42 @@ export class SpotInfoAPI {
     const response = await this.httpApi.makeRequest({
       type: InfoType.SPOT_META_AND_ASSET_CTXS,
     });
+    return rawResponse
+      ? (response as SpotMetaAndAssetCtxs)
+      : ((await this.symbolConversion.convertResponse(
+          response
+        )) as SpotMetaAndAssetCtxs);
+  }
+
+  async getTokenDetails(
+    tokenId: string,
+    rawResponse: boolean = false
+  ): Promise<any> {
+    const response = await this.httpApi.makeRequest(
+      {
+        type: InfoType.TOKEN_DETAILS,
+        tokenId: tokenId,
+      },
+      20
+    );
+
+    return rawResponse
+      ? response
+      : await this.symbolConversion.convertResponse(response);
+  }
+
+  async getSpotDeployState(
+    user: string,
+    rawResponse: boolean = false
+  ): Promise<any> {
+    const response = await this.httpApi.makeRequest(
+      {
+        type: InfoType.SPOT_DEPLOY_STATE,
+        user: user,
+      },
+      20
+    );
+
     return rawResponse
       ? response
       : await this.symbolConversion.convertResponse(response);

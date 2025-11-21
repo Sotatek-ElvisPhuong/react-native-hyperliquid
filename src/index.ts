@@ -19,11 +19,13 @@ export class Hyperliquid {
   private symbolConversion: SymbolConversion;
   private isValidPrivateKey: boolean = false;
   private walletAddress: string | null = null;
+  private vaultAddress?: string | null = null;
 
   constructor(
     privateKey: string | null = null,
     testnet: boolean = false,
-    walletAddress: string | null = null
+    walletAddress: string | null = null,
+    vaultAddress: string | null = null
   ) {
     const baseURL = testnet
       ? CONSTANTS.BASE_URLS.TESTNET
@@ -32,7 +34,12 @@ export class Hyperliquid {
     this.rateLimiter = new RateLimiter();
     this.symbolConversion = new SymbolConversion(baseURL, this.rateLimiter);
 
-    this.info = new InfoAPI(baseURL, this.rateLimiter, this.symbolConversion);
+    this.info = new InfoAPI(
+      baseURL,
+      this.rateLimiter,
+      this.symbolConversion,
+      this
+    );
     this.ws = new WebSocketClient(testnet);
     this.subscriptions = new WebSocketSubscriptions(
       this.ws,
@@ -44,6 +51,7 @@ export class Hyperliquid {
     this.custom = this.createAuthenticatedProxy(CustomOperations);
 
     this.walletAddress = walletAddress;
+    this.vaultAddress = vaultAddress || null;
 
     if (privateKey) {
       this.initializeWithPrivateKey(privateKey, testnet);
@@ -78,10 +86,12 @@ export class Hyperliquid {
       this.exchange = new ExchangeAPI(
         testnet,
         formattedPrivateKey,
-        this.info,
+        // this.info,
         this.rateLimiter,
         this.symbolConversion,
-        this
+        this.walletAddress,
+        this,
+        this.vaultAddress
       );
       this.custom = new CustomOperations(
         this.exchange,

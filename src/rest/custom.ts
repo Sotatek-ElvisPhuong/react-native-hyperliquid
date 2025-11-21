@@ -12,6 +12,7 @@ import type {
   TriggerOrderTypeWire,
   Order,
   Builder,
+  MultiOrder,
 } from '../types';
 import type { CancelOrderResponse } from '../utils/signing';
 import { SymbolConversion } from '../utils/symbolConversion';
@@ -159,8 +160,8 @@ export class CustomOperations {
     );
 
     const orderType: OrderType = {
-      limit: { tif: 'FrontendMarket' },
-    } as OrderType;
+      limit: { tif: 'Gtc' },
+    };
 
     const orders: Order[] = [
       {
@@ -194,7 +195,7 @@ export class CustomOperations {
       }
     }
 
-    const orderRequest: OrderRequest = {
+    const orderRequest: MultiOrder = {
       builder: builder,
       orders: orders,
       grouping: triggers && triggers.length > 0 ? 'normalTpsl' : 'na',
@@ -245,13 +246,13 @@ export class CustomOperations {
       }
     }
 
-    const orderRequest: OrderRequest = {
+    const orderRequest: MultiOrder = {
       orders: orders,
       grouping: 'positionTpsl',
-      builder: builder
+      builder: builder,
     };
 
-    return this.exchange.placeOrdersTpSl(orderRequest);
+    return this.exchange.placeOrder(orderRequest);
   }
 
   /**
@@ -402,10 +403,10 @@ export class CustomOperations {
       }
     }
 
-    const orderRequest: OrderRequest = {
+    const orderRequest: MultiOrder = {
       orders: orders,
       grouping: triggers && triggers!.length > 0 ? 'normalTpsl' : 'na',
-      builder: builder
+      builder: builder,
     };
 
     return this.exchange.placeOrder(orderRequest);

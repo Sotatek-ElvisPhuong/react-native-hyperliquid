@@ -16,6 +16,7 @@ import type {
   Grouping,
   Order,
   Builder,
+  OrderRequest,
 } from '../types';
 
 const phantomDomain = {
@@ -215,6 +216,25 @@ export function floatToWire(x: number): string {
   return normalized;
 }
 
+/**
+ * Removes trailing zeros from a string representation of a number.
+ * This is useful when working with price and size fields directly.
+ *
+ * Hyperliquid API requires that price ('p') and size ('s') fields do not contain trailing zeros.
+ * For example, "12345.0" should be "12345" and "0.123450" should be "0.12345".
+ * This function ensures that all numeric string values are properly formatted.
+ *
+ * @param value - The string value to normalize
+ * @returns The normalized string without trailing zeros
+ */
+export function removeTrailingZeros(value: string): string {
+  if (!value.includes('.')) return value;
+
+  const normalized = value.replace(/\.?0+$/, '');
+  if (normalized === '-0') return '0';
+  return normalized;
+}
+
 export function floatToIntForHashing(x: number): number {
   return floatToInt(x, 8);
 }
@@ -235,12 +255,21 @@ export function getTimestampMs(): number {
   return Date.now();
 }
 
-export function orderToWire(order: Order, asset: number): OrderWire {
+export function orderToWire(
+  order: Order | OrderRequest,
+  asset: number
+): OrderWire {
   const orderWire: OrderWire = {
     a: asset,
     b: order.is_buy,
-    p: floatToWire(order.limit_px),
-    s: floatToWire(order.sz),
+    p:
+      typeof order.limit_px === 'string'
+        ? removeTrailingZeros(order.limit_px)
+        : floatToWire(order.limit_px),
+    s:
+      typeof order.sz === 'string'
+        ? removeTrailingZeros(order.sz)
+        : floatToWire(order.sz),
     r: order.reduce_only,
     t: orderTypeToWire(order.order_type),
   };
@@ -248,6 +277,26 @@ export function orderToWire(order: Order, asset: number): OrderWire {
     orderWire.c = order.cloid;
   }
   return orderWire;
+}
+
+export function orderWireToAction(
+  orders: OrderWire[],
+  grouping: Grouping = 'na',
+  builder?: Builder
+): any {
+  return {
+    type: 'order',
+    orders: orders,
+    grouping: grouping,
+    ...(builder !== undefined
+      ? {
+          builder: {
+            b: builder.address.toLowerCase(),
+            f: builder.fee,
+          },
+        }
+      : {}),
+  };
 }
 
 export interface CancelOrderResponse {
@@ -318,4 +367,14 @@ function isAbstractSigner(client: unknown): client is AbstractSigner {
     typeof client.signTypedData === 'function' &&
     client.signTypedData.length === 3
   );
+}
+
+export interface CancelOrderResponse {
+  status: string;
+  response: {
+    type: string;
+    data: {
+      statuses: string[];
+    };
+  };
 }

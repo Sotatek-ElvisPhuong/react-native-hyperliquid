@@ -1,34 +1,163 @@
 import { HttpApi } from './helpers';
 import * as CONSTANTS from '../types/constants';
+import type { MetaAndAssetCtxs, SpotMetaAndAssetCtxs } from '../types';
 
 export class SymbolConversion {
   private assetToIndexMap: Map<string, number> = new Map();
   private exchangeToInternalNameMap: Map<string, string> = new Map();
   private httpApi: HttpApi;
-  private refreshIntervalMs: number = 60000;
-  private refreshInterval: NodeJS.Timeout | null = null;
-  private initializationPromise: Promise<void>;
+  private refreshIntervalMs: number;
+  private refreshInterval: any = null;
+  private initialized: boolean = false;
+  private consecutiveFailures: number = 0;
+  private maxConsecutiveFailures: number = 5;
+  // private baseRetryDelayMs: number = 1000;
+  private disableAssetMapRefresh: boolean;
 
-  constructor(baseURL: string, rateLimiter: any) {
+  constructor(
+    baseURL: string,
+    rateLimiter: any,
+    disableAssetMapRefresh: boolean = false,
+    refreshIntervalMs: number = 60000
+  ) {
     this.httpApi = new HttpApi(baseURL, CONSTANTS.ENDPOINTS.INFO, rateLimiter);
-    this.initializationPromise = this.initialize();
+    this.disableAssetMapRefresh = disableAssetMapRefresh;
+    this.refreshIntervalMs = refreshIntervalMs;
   }
 
-  private async initialize(): Promise<void> {
-    await this.refreshAssetMaps();
-    this.startPeriodicRefresh();
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+
+    try {
+      await this.refreshAssetMaps();
+
+      // Only start periodic refresh if not disabled
+      if (!this.disableAssetMapRefresh) {
+        this.startPeriodicRefresh();
+      }
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Failed to initialize SymbolConversion:', error);
+      throw error;
+    }
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
+  }
+
+  async getInternalName(exchangeName: string): Promise<string | undefined> {
+    await this.ensureInitialized();
+    return this.exchangeToInternalNameMap.get(exchangeName);
+  }
+
+  private startPeriodicRefresh(): void {
+    if (this.refreshInterval !== null) {
+      clearInterval(this.refreshInterval);
+    }
+
+    // Use standard setInterval that works in both Node.js and browser
+    this.refreshInterval = setInterval(() => {
+      this.refreshAssetMaps().catch((error) => {
+        console.error('Failed to refresh asset maps:', error);
+        // Increment consecutive failures counter
+        this.consecutiveFailures++;
+
+        // If we've reached the maximum number of consecutive failures, stop refreshing
+        if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
+          console.warn(
+            `Maximum consecutive failures (${this.maxConsecutiveFailures}) reached. Stopping automatic refresh.`
+          );
+          this.stopPeriodicRefresh();
+        }
+      });
+    }, this.refreshIntervalMs);
+  }
+
+  // Check if max failures has been reached and stop refresh if needed
+  private checkMaxFailures(): void {
+    if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
+      console.warn(
+        `Maximum consecutive failures (${this.maxConsecutiveFailures}) reached. Stopping automatic refresh.`
+      );
+      this.stopPeriodicRefresh();
+    }
+  }
+
+  public stopPeriodicRefresh(): void {
+    if (this.refreshInterval !== null) {
+      clearInterval(this.refreshInterval);
+      this.refreshInterval = null;
+    }
+  }
+
+  public enablePeriodicRefresh(): void {
+    if (!this.disableAssetMapRefresh && this.initialized) {
+      this.startPeriodicRefresh();
+    }
+  }
+
+  public disablePeriodicRefresh(): void {
+    this.stopPeriodicRefresh();
+  }
+
+  public isRefreshEnabled(): boolean {
+    return !this.disableAssetMapRefresh && this.refreshInterval !== null;
+  }
+
+  public getRefreshInterval(): number {
+    return this.refreshIntervalMs;
+  }
+
+  public setRefreshInterval(intervalMs: number): void {
+    this.refreshIntervalMs = intervalMs;
+    if (this.refreshInterval !== null) {
+      // Restart with new interval
+      this.stopPeriodicRefresh();
+      this.startPeriodicRefresh();
+    }
   }
 
   private async refreshAssetMaps(): Promise<void> {
     try {
       const [perpMeta, spotMeta] = await Promise.all([
-        this.httpApi.makeRequest({
-          type: CONSTANTS.InfoType.PERPS_META_AND_ASSET_CTXS,
-        }),
-        this.httpApi.makeRequest({
-          type: CONSTANTS.InfoType.SPOT_META_AND_ASSET_CTXS,
-        }),
+        this.httpApi.makeRequest<MetaAndAssetCtxs>(
+          {
+            type: CONSTANTS.InfoType.PERPS_META_AND_ASSET_CTXS,
+          },
+          20
+        ), // Correct weight according to Hyperliquid documentation
+        this.httpApi.makeRequest<SpotMetaAndAssetCtxs>(
+          {
+            type: CONSTANTS.InfoType.SPOT_META_AND_ASSET_CTXS,
+          },
+          20
+        ), // Correct weight according to Hyperliquid documentation
       ]);
+
+      // Verify responses are valid before proceeding
+      if (
+        !perpMeta ||
+        !perpMeta[0] ||
+        !perpMeta[0].universe ||
+        !Array.isArray(perpMeta[0].universe)
+      ) {
+        throw new Error('Invalid perpetual metadata response');
+      }
+
+      if (
+        !spotMeta ||
+        !spotMeta[0] ||
+        !spotMeta[0].tokens ||
+        !Array.isArray(spotMeta[0].tokens) ||
+        !spotMeta[0].universe ||
+        !Array.isArray(spotMeta[0].universe)
+      ) {
+        throw new Error('Invalid spot metadata response');
+      }
 
       this.assetToIndexMap.clear();
       this.exchangeToInternalNameMap.clear();
@@ -48,38 +177,24 @@ export class SymbolConversion {
         if (universeItem) {
           const internalName = `${token.name}-SPOT`;
           const exchangeName = universeItem.name;
-          const index = spotMeta[0].universe.indexOf(universeItem);
+          const index = universeItem.index;
           this.assetToIndexMap.set(internalName, 10000 + index);
           this.exchangeToInternalNameMap.set(exchangeName, internalName);
         }
       });
+
+      // Reset consecutive failures counter on success
+      this.consecutiveFailures = 0;
     } catch (error) {
-      console.error('Failed to refresh asset maps:', error);
+      // Increment consecutive failures counter
+      this.consecutiveFailures++;
+
+      // Check if we've reached the maximum number of consecutive failures
+      this.checkMaxFailures();
+
+      // Propagate the error to be handled by the caller
+      throw error;
     }
-  }
-
-  private startPeriodicRefresh(): void {
-    this.refreshInterval = setInterval(() => {
-      this.refreshAssetMaps();
-    }, this.refreshIntervalMs);
-  }
-
-  public stopPeriodicRefresh(): void {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-      this.refreshInterval = null;
-    }
-  }
-
-  private async ensureInitialized(): Promise<void> {
-    await this.initializationPromise;
-  }
-
-  public async getInternalName(
-    exchangeName: string
-  ): Promise<string | undefined> {
-    await this.ensureInitialized();
-    return this.exchangeToInternalNameMap.get(exchangeName);
   }
 
   public async getExchangeName(
@@ -107,7 +222,8 @@ export class SymbolConversion {
     const perp: string[] = [];
     const spot: string[] = [];
 
-    for (const [asset, _] of this.assetToIndexMap.entries()) {
+    for (const [asset, index] of this.assetToIndexMap.entries()) {
+      console.log(index);
       if (asset.endsWith('-PERP')) {
         perp.push(asset);
       } else if (asset.endsWith('-SPOT')) {
@@ -198,6 +314,10 @@ export class SymbolConversion {
       }
     }
     return value;
+  }
+
+  static convertToUint64(value: bigint): number {
+    return Number(value & ((1n << 64n) - 1n));
   }
 
   async convertResponse(

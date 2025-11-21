@@ -278,7 +278,8 @@ export class WebSocketSubscriptions {
 
   async postRequest(
     requestType: 'info' | 'action',
-    payload: any
+    payload: any,
+    timeout: number = 30000
   ): Promise<any> {
     const id = Date.now();
     const convertedPayload =
@@ -317,7 +318,7 @@ export class WebSocketSubscriptions {
       setTimeout(() => {
         this.ws.removeListener('message', responseHandler);
         reject(new Error('Request timeout'));
-      }, 30000);
+      }, timeout);
     });
   }
 

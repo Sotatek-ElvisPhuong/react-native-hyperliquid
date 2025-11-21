@@ -13,7 +13,8 @@ export declare class Hyperliquid {
     private symbolConversion;
     private isValidPrivateKey;
     private walletAddress;
-    constructor(privateKey?: string | null, testnet?: boolean, walletAddress?: string | null);
+    private vaultAddress?;
+    constructor(privateKey?: string | null, testnet?: boolean, walletAddress?: string | null, vaultAddress?: string | null);
     private createAuthenticatedProxy;
     private initializeWithPrivateKey;
     isAuthenticated(): boolean;

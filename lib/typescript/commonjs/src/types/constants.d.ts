@@ -28,7 +28,40 @@ export declare enum InfoType {
     FUNDING_HISTORY = "fundingHistory",
     SPOT_META = "spotMeta",
     SPOT_CLEARINGHOUSE_STATE = "spotClearinghouseState",
-    SPOT_META_AND_ASSET_CTXS = "spotMetaAndAssetCtxs"
+    SPOT_META_AND_ASSET_CTXS = "spotMetaAndAssetCtxs",
+    PREDICTED_FUNDINGS = "predictedFundings",
+    SPOT_DEPLOY_STATE = "spotDeployState",
+    TOKEN_DETAILS = "tokenDetails",
+    MAX_BUILDER_FEE = "maxBuilderFee",
+    HISTORICAL_ORDERS = "historicalOrders",
+    USER_TWAP_SLICE_FILLS = "userTwapSliceFills",
+    SUB_ACCOUNTS = "subAccounts",
+    VAULT_DETAILS = "vaultDetails",
+    USER_VAULT_EQUITIES = "userVaultEquities",
+    USER_ROLE = "userRole",
+    DELEGATIONS = "delegations",
+    DELEGATOR_SUMMARY = "delegatorSummary",
+    PERPS_AT_OPEN_INTEREST_CAP = "perpsAtOpenInterestCap",
+    DELEGATOR_HISTORY = "delegatorHistory",
+    DELEGATOR_REWARDS = "delegatorRewards",
+    VALIDATOR_SUMMARIES = "validatorSummaries",
+    VAULT_SUMMARIES = "vaultSummaries",
+    BLOCK_DETAILS = "blockDetails",
+    TX_DETAILS = "txDetails",
+    USER_DETAILS = "userDetails",
+    USER_FEES = "userFees",
+    PORTFOLIO = "portfolio",
+    PRE_TRANSFER_CHECK = "preTransferCheck",
+    REFERRAL = "referral",
+    EXTRA_AGENTS = "extraAgents",
+    IS_VIP = "isVip",
+    LEGAL_CHECK = "legalCheck",
+    USER_TWAP_SLICE_FILLS_BY_TIME = "userTwapSliceFillsByTime",
+    TWAP_HISTORY = "twapHistory",
+    USER_TO_MULTI_SIG_SIGNERS = "userToMultiSigSigners",
+    BUILDER_FEE_APPROVAL = "builderFeeApproval",
+    USER_ORDER_HISTORY = "userOrderHistory",
+    PERP_DEX_LIMITS = "perpDexLimits"
 }
 export declare enum ExchangeType {
     ORDER = "order",
@@ -44,9 +77,27 @@ export declare enum ExchangeType {
     WITHDRAW = "withdraw3",
     SPOT_USER = "spotUser",
     VAULT_TRANSFER = "vaultTransfer",
+    CREATE_VAULT = "createVault",
+    VAULT_DISTRIBUTE = "vaultDistribute",
+    VAULT_MODIFY = "vaultModify",
     SET_REFERRER = "setReferrer",
+    REGISTER_REFERRER = "registerReferrer",
     USD_CLASS_TRANSFER = "usdClassTransfer",
-    APPROVE_BUILDER_FEE = "approveBuilderFee"
+    TWAP_ORDER = "twapOrder",
+    TWAP_CANCEL = "twapCancel",
+    APPROVE_AGENT = "approveAgent",
+    APPROVE_BUILDER_FEE = "approveBuilderFee",
+    EVM_USER_MODIFY = "evmUserModify",
+    CLAIM_REWARDS = "claimRewards",
+    CREATE_SUB_ACCOUNT = "createSubAccount",
+    SET_DISPLAY_NAME = "setDisplayName",
+    C_DEPOSIT = "cDeposit",
+    C_WITHDRAW = "cWithdraw",
+    TOKEN_DELEGATE = "tokenDelegate",
+    SUB_ACCOUNT_SPOT_TRANSFER = "subAccountSpotTransfer",
+    SUB_ACCOUNT_TRANSFER = "subAccountTransfer",
+    RESERVE_REQUEST_WEIGHT = "reserveRequestWeight",
+    NOOP = "noop"
 }
 export declare const WEBSOCKET: {
     MAINNET_URL: string;
@@ -56,4 +107,5 @@ export declare const CHAIN_IDS: {
     ARBITRUM_MAINNET: string;
     ARBITRUM_TESTNET: string;
 };
+export declare const SDK_CODE = "PLACEHOLDER";
 //# sourceMappingURL=constants.d.ts.map

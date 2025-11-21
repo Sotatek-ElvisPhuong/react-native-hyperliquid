@@ -42,7 +42,7 @@ export declare class WebSocketSubscriptions {
         user: string;
     }) => void): Promise<void>;
     subscribeActiveAssetCtx(user: string, coin: string, callback: (data: WsActiveAssetCtx) => void): Promise<void>;
-    postRequest(requestType: 'info' | 'action', payload: any): Promise<any>;
+    postRequest(requestType: 'info' | 'action', payload: any, timeout?: number): Promise<any>;
     unsubscribeFromAllMids(): Promise<void>;
     unsubscribeFromNotification(user: string): Promise<void>;
     unsubscribeFromWebData2(user: string): Promise<void>;

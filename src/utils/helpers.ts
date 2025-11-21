@@ -22,15 +22,21 @@ export class HttpApi {
     this.rateLimiter = rateLimiter;
   }
 
-  async makeRequest(
+  async makeRequest<T>(
     payload: any,
     weight: number = 2,
     endpoint: string = this.endpoint
-  ): Promise<any> {
+  ): Promise<T> {
     try {
       await this.rateLimiter.waitForToken(weight);
 
       const response = await this.client.post(endpoint, payload);
+
+      // Check if response data is null or undefined before returning
+      if (response.data === null || response.data === undefined) {
+        throw new Error('Received null or undefined response data');
+      }
+
       return response.data;
     } catch (error) {
       handleApiError(error);
