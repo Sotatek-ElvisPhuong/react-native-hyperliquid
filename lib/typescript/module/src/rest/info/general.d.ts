@@ -1,28 +1,17 @@
-import { RateLimiter } from '../utils/rateLimiter';
-import { SpotInfoAPI } from './info/spot';
-import { PerpetualsInfoAPI } from './info/perpetuals';
-import { SymbolConversion } from '../utils/symbolConversion';
-import { Hyperliquid } from '../index';
-import type { AllMids, BuilderFeeApproval, CandleSnapshot, Delegation, DelegatorHistoryEntry, DelegatorReward, DelegatorSummary, ExtraAgent, FrontendOpenOrders, HistoricalOrder, L2Book, LegalCheck, MultiSigSigners, OrderStatus, PortfolioPeriods, PreTransferCheck, Referral, SubAccount, TwapHistory, TwapSliceFill, UserFees, UserFills, UserOpenOrders, UserOrderHistory, UserRateLimit, UserRole, ValidatorSummary, VaultDetails, VaultEquity, VaultSummary } from '../types';
-export declare class InfoAPI {
-    spot: SpotInfoAPI;
-    perpetuals: PerpetualsInfoAPI;
+import { HttpApi } from '../../utils/helpers';
+import { SymbolConversion } from '../../utils/symbolConversion';
+import { Hyperliquid } from '../../index';
+import type { AllMids, BuilderFeeApproval, CandleSnapshot, Delegation, DelegatorHistoryEntry, DelegatorReward, DelegatorSummary, ExtraAgent, FrontendOpenOrders, HistoricalOrder, L2Book, LegalCheck, MultiSigSigners, OrderStatus, PortfolioPeriods, PreTransferCheck, Referral, SubAccount, TwapHistory, TwapSliceFill, UserFees, UserFills, UserOpenOrders, UserOrderHistory, UserRateLimit, UserRole, ValidatorSummary, VaultDetails, VaultEquity, VaultSummary } from '../../types';
+export declare class GeneralInfoAPI {
     private httpApi;
-    private generalAPI;
     private symbolConversion;
     private parent;
-    constructor(baseURL: string, rateLimiter: RateLimiter, symbolConversion: SymbolConversion, parent: Hyperliquid);
-    getAssetIndex(assetName: string): Promise<number | undefined>;
-    getInternalName(exchangeName: string): Promise<string | undefined>;
-    getAllAssets(): Promise<{
-        perp: string[];
-        spot: string[];
-    }>;
+    constructor(httpApi: HttpApi, symbolConversion: SymbolConversion, parent: Hyperliquid);
     getAllMids(rawResponse?: boolean): Promise<AllMids>;
     getUserOpenOrders(user: string, rawResponse?: boolean): Promise<UserOpenOrders>;
     getFrontendOpenOrders(user: string, rawResponse?: boolean): Promise<FrontendOpenOrders>;
     getUserFills(user: string, rawResponse?: boolean): Promise<UserFills>;
-    getUserFillsByTime(user: string, startTime: number, endTime: number, rawResponse?: boolean): Promise<UserFills>;
+    getUserFillsByTime(user: string, startTime: number, endTime?: number, rawResponse?: boolean): Promise<UserFills>;
     getUserRateLimit(user: string, rawResponse?: boolean): Promise<UserRateLimit>;
     getOrderStatus(user: string, oid: number | string, rawResponse?: boolean): Promise<OrderStatus>;
     getL2Book(coin: string, rawResponse?: boolean, nSigFigs?: number, mantissa?: number): Promise<L2Book>;
@@ -53,4 +42,4 @@ export declare class InfoAPI {
     getBuilderFeeApproval(user: string, builderAddress: string, rawResponse?: boolean): Promise<BuilderFeeApproval>;
     getUserOrderHistory(user: string, startTime: number, endTime?: number, rawResponse?: boolean): Promise<UserOrderHistory>;
 }
-//# sourceMappingURL=info.d.ts.map
+//# sourceMappingURL=general.d.ts.map
