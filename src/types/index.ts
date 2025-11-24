@@ -12,7 +12,7 @@ export type Market = {
   name: string;
   szDecimals: number;
   maxLeverage: number;
-  onlyIsolated: boolean;
+  onlyIsolated?: boolean;
 };
 
 export interface AssetPosition {
@@ -314,7 +314,7 @@ export interface WebData2 {
   clearinghouseState: ClearinghouseState;
   leadingVaults: any[];
   totalVaultEquity: string;
-  openOrders: FrontendOpenOrders[];
+  openOrders: FrontendOpenOrders;
   agentAddress: string;
   agentValidUntil: number;
   cumLedger: string;
@@ -639,7 +639,7 @@ export interface WsNonUserCancel {
   oid: number;
 }
 
-export type FrontendOpenOrders = {
+export type FrontendOpenOrder = {
   coin: string;
   isPositionTpsl: boolean;
   isTrigger: boolean;
@@ -653,7 +653,9 @@ export type FrontendOpenOrders = {
   timestamp: number;
   triggerCondition: string;
   triggerPx: string;
-}[];
+};
+
+export type FrontendOpenOrders = FrontendOpenOrder[];
 
 export interface UserRateLimit {
   [key: string]: any;
