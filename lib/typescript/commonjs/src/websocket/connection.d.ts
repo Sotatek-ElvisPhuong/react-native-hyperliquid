@@ -8,7 +8,7 @@ export declare class WebSocketClient extends EventEmitter {
     private initialReconnectDelay;
     private maxReconnectDelay;
     constructor(testnet?: boolean);
-    websocketReady(): boolean;
+    getWebsocketState(): number | undefined;
     connect(): Promise<void>;
     private reconnect;
     private startPingInterval;
