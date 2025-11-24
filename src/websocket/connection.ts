@@ -19,6 +19,10 @@ export class WebSocketClient extends EventEmitter {
       : CONSTANTS.WSS_URLS.PRODUCTION;
   }
 
+  websocketReady(): boolean {
+    return !!this.ws && this.ws.readyState === WebSocket.OPEN;
+  }
+
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(this.url);
