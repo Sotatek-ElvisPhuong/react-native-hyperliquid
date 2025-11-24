@@ -114,9 +114,14 @@ export class Hyperliquid {
   }
 
   public async ensureInitialized(): Promise<void> {
-    if (!this.ws || !this.ws.websocketReady()) {
+    const readyState = this.ws.getWebsocketState();
+    if (readyState === WebSocket.CLOSED) {
       await this.connect();
     }
+  }
+
+  public async websocketState() {
+    return this.ws.getWebsocketState();
   }
 
   async connect(): Promise<void> {
