@@ -19,7 +19,7 @@ export declare class Hyperliquid {
     private initializeWithPrivateKey;
     isAuthenticated(): boolean;
     ensureInitialized(): Promise<void>;
-    websocketState(): Promise<number | undefined>;
+    websocketState(): number | undefined;
     connect(): Promise<void>;
     disconnect(): void;
 }

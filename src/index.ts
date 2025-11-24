@@ -120,7 +120,7 @@ export class Hyperliquid {
     }
   }
 
-  public async websocketState() {
+  public websocketState() {
     return this.ws.getWebsocketState();
   }
 
