@@ -524,7 +524,7 @@ export interface ClearinghouseState {
   withdrawable: string;
 }
 
-export type UserFills = {
+export type UserFill = {
   closedPnl: string;
   coin: string;
   crossed: boolean;
@@ -542,7 +542,9 @@ export type UserFills = {
   builderFee?: string; // Optional, only present if not 0
   liquidationMarkPx?: string; // Optional, only present for liquidation fills
   twapId?: number; // Optional, present for TWAP fills
-}[];
+};
+
+export type UserFills = UserFill[];
 
 export interface Leverage {
   type: 'cross' | 'isolated';
