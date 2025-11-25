@@ -81,6 +81,7 @@ export class Hyperliquid {
       const formattedPrivateKey = privateKey.startsWith('0x')
         ? privateKey
         : (`0x${privateKey}` as `0x${string}`);
+      // eslint-disable-next-line no-new
       new ethers.Wallet(formattedPrivateKey); // Validate the private key
 
       this.exchange = new ExchangeAPI(
