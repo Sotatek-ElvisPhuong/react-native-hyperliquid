@@ -2,15 +2,22 @@ import { EventEmitter } from 'events';
 
 import * as CONSTANTS from '../types/constants';
 
+interface WSMessage {
+  method?: string;
+  [key: string]: any;
+}
+
 export class WebSocketClient extends EventEmitter {
   private ws: WebSocket | null = null;
   private url: string;
   private pingInterval: NodeJS.Timeout | null = null;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
-  // private reconnectDelay: number = 5000;
   private initialReconnectDelay: number = 1000;
   private maxReconnectDelay: number = 30000;
+  private messageQueue: WSMessage[] = [];
+  private isManuallyClosed: boolean = false;
 
   constructor(testnet: boolean = false) {
     super();
@@ -20,59 +27,95 @@ export class WebSocketClient extends EventEmitter {
   }
 
   getWebsocketState(): number | undefined {
-    return this?.ws?.readyState;
+    return this.ws?.readyState;
   }
 
   connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    this.isManuallyClosed = false;
+    return new Promise((resolve) => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        resolve();
+        return;
+      }
+      console.log('this.url: ', this.url);
       this.ws = new WebSocket(this.url);
 
-      this.ws.onopen = () => {
+      const handleOpen = () => {
         console.log('WebSocket connected');
         this.reconnectAttempts = 0;
         this.startPingInterval();
+        this.flushMessageQueue();
         resolve();
       };
 
-      this.ws.onmessage = (data: any) => {
+      const handleMessage = (event: any) => {
         try {
-          const message = JSON.parse(data.data.toString());
+          const message = JSON.parse(event.data.toString());
           this.emit('message', message);
         } catch (error) {
-          console.error('JSON Parse error:');
+          console.error('JSON Parse Error:', event.data, error);
         }
       };
 
-      this.ws.onerror = (error) => {
+      const handleError = (error: any) => {
         console.error('WebSocket error:', error);
-        reject(error);
       };
 
-      this.ws.onclose = () => {
+      const handleClose = () => {
         console.log('WebSocket disconnected');
         this.stopPingInterval();
-        this.reconnect();
+        cleanup();
+        if (!this.isManuallyClosed) this.reconnect();
       };
+
+      const cleanup = () => {
+        if (!this.ws) return;
+        this.ws.onopen = null;
+        this.ws.onmessage = null;
+        this.ws.onerror = null;
+        this.ws.onclose = null;
+      };
+
+      this.ws.onopen = handleOpen;
+      this.ws.onmessage = handleMessage;
+      this.ws.onerror = handleError;
+      this.ws.onclose = handleClose;
     });
   }
 
   private reconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = Math.min(
-        this.initialReconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
-        this.maxReconnectDelay
-      );
-      setTimeout(() => this.connect(), delay);
-    } else {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       this.emit('maxReconnectAttemptsReached');
+      return;
     }
+
+    this.reconnectAttempts++;
+    const delay = Math.min(
+      this.initialReconnectDelay * 2 ** (this.reconnectAttempts - 1),
+      this.maxReconnectDelay
+    );
+    console.log(`Reconnect attempt #${this.reconnectAttempts} in ${delay}ms`);
+
+    if (this.ws) {
+      // cleanup listener cũ trước khi reconnect
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+    }
+
+    this.reconnectTimeout = setTimeout(() => {
+      this.connect().catch(() => {}); // avoid unhandled promise
+    }, delay);
   }
 
   private startPingInterval(): void {
+    this.stopPingInterval();
     this.pingInterval = setInterval(() => {
-      this.sendMessage({ method: 'ping' });
-    }, 15000); // Send ping every 15 seconds
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.sendMessage({ method: 'ping' });
+      }
+    }, 15000); // 15s
   }
 
   private stopPingInterval(): void {
@@ -82,18 +125,32 @@ export class WebSocketClient extends EventEmitter {
     }
   }
 
-  sendMessage(message: any): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      throw new Error('WebSocket is not connected');
+  sendMessage(message: WSMessage): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      // queue if not ready
+      this.messageQueue.push(message);
     }
-    this.ws.send(JSON.stringify(message));
+  }
+
+  private flushMessageQueue() {
+    while (this.messageQueue.length > 0) {
+      const msg = this.messageQueue.shift();
+      if (msg) this.sendMessage(msg);
+    }
   }
 
   close(): void {
-    if (this.ws) {
-      this.ws.close();
-    }
-    this.removeAllListeners();
+    this.isManuallyClosed = true;
     this.stopPingInterval();
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    if (this.ws) this.ws.close();
+    this.ws = null;
+    this.removeAllListeners();
+    this.messageQueue = [];
   }
 }
