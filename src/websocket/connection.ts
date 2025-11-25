@@ -97,7 +97,6 @@ export class WebSocketClient extends EventEmitter {
     console.log(`Reconnect attempt #${this.reconnectAttempts} in ${delay}ms`);
 
     if (this.ws) {
-      // cleanup listener cũ trước khi reconnect
       this.ws.onopen = null;
       this.ws.onmessage = null;
       this.ws.onclose = null;
